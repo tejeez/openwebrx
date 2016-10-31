@@ -53,11 +53,21 @@ class dsp_plugin:
 		self.squelch_level = 0
 		self.fft_averages = 50
 		self.real_input = False
+		self.pre_decimation = 1
+		self.specialddc = False
+
+		# Values to test CIC DDC on 16-bit real signal:
+		# TODO: Put it in configuration file.
+		# Now these fixed values break everything else.
+		# This is for initial test only!
+		self.pre_decimation = 10
+		self.specialddc = "cicddc_s16_c"
 
 	def chain(self,which):
 		any_chain_base="ncat -v 127.0.0.1 {nc_port} | "
 		if self.csdr_dynamic_bufsize: any_chain_base+="csdr setbuf {start_bufsize} | "
 		if self.csdr_through: any_chain_base+="csdr through | "
+		conversionless_chain_base = any_chain_base
 		any_chain_base+=self.format_conversion+(" | " if  self.format_conversion!="" else "") ##"csdr flowcontrol {flowcontrol} auto 1.5 10 | "
 		if which == "fft":
 			fft_chain_base = any_chain_base + "csdr " + \
@@ -73,7 +83,9 @@ class dsp_plugin:
 			else:
 				return fft_chain_base
 
-		if self.real_input:
+		if self.specialddc:
+			chain_begin=conversionless_chain_base+"csdr " +self.specialddc+ " {pre_decimation} --fifo {shift_pipe} "
+		elif self.real_input:
 			chain_begin=any_chain_base+"csdr shift_addition_fc --fifo {shift_pipe}"
 		else:
 			chain_begin=any_chain_base+"csdr shift_addition_cc --fifo {shift_pipe}"
@@ -98,13 +110,14 @@ class dsp_plugin:
 	def set_samp_rate(self,samp_rate):
 		#to change this, restart is required
 		self.samp_rate=samp_rate
+		self.samp_rate_1=samp_rate / self.pre_decimation
 		self.decimation=1
-		while self.samp_rate/(self.decimation+1)>self.output_rate:
+		while self.samp_rate_1/(self.decimation+1)>self.output_rate:
 			self.decimation+=1
 		self.last_decimation=float(self.if_samp_rate())/self.output_rate
 
 	def if_samp_rate(self):
-		return self.samp_rate/self.decimation
+		return self.samp_rate_1/self.decimation
 
 	def get_name(self):
 		return self.name
@@ -184,7 +197,7 @@ class dsp_plugin:
 		os.mkfifo(path)
 
 	def ddc_transition_bw(self):
-		return self.ddc_transition_bw_rate*(self.if_samp_rate()/float(self.samp_rate))
+		return self.ddc_transition_bw_rate*(self.if_samp_rate()/float(self.samp_rate_1))
 
 	def start(self):
 		command_base=self.chain(self.demodulator)
@@ -210,7 +223,8 @@ class dsp_plugin:
 			last_decimation=self.last_decimation, fft_size=self.fft_size, fft_block_size=self.fft_block_size(), fft_averages=self.fft_averages, \
 			bpf_transition_bw=float(self.bpf_transition_bw)/self.if_samp_rate(), ddc_transition_bw=self.ddc_transition_bw(), \
 			flowcontrol=int(self.samp_rate*2), start_bufsize=self.base_bufsize*self.decimation, nc_port=self.nc_port, \
-			squelch_pipe=self.squelch_pipe, smeter_pipe=self.smeter_pipe )
+			squelch_pipe=self.squelch_pipe, smeter_pipe=self.smeter_pipe, \
+			pre_decimation=self.pre_decimation)
 
 		print "[openwebrx-dsp-plugin:csdr] Command =",command
 		#code.interact(local=locals())
