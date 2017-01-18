@@ -64,7 +64,7 @@ class dsp_plugin:
 		self.specialddc = "cicddc_s16_c"
 
 	def chain(self,which):
-		any_chain_base="ncat -v 127.0.0.1 {nc_port} | "
+		any_chain_base="shmread /openwebrx_{nc_port} | "
 		if self.csdr_dynamic_bufsize: any_chain_base+="csdr setbuf {start_bufsize} | "
 		if self.csdr_through: any_chain_base+="csdr through | "
 		conversionless_chain_base = any_chain_base

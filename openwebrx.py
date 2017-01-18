@@ -144,24 +144,28 @@ def main():
 		pass
 
 	#Start rtl thread
-	if os.system("ncat --version > /dev/null") == 32512: #check for ncat
-		print "[openwebrx-main] Error: ncat not detected, please install it! The ncat tool is a netcat alternative, used for distributing the I/Q data stream. It is usually available in the nmap package (sudo apt-get install nmap). For more explanation, look into the README.md"
+	if os.system("shmwrite 2>/dev/null") == 32512: #check for shmwrite
+		print "[openwebrx-main] Error: shmbuffer not detected. Get it from https://github.com/tejeez/shmbuffer , compile it and put it in PATH when starting OpenWebRX."
 		return
 	if cfg.start_rtl_thread:
-		cfg.start_rtl_command += "| ncat -4l %d -k --send-only --allow 127.0.0.1" % cfg.iq_server_port
+		cfg.start_rtl_command += "| shmwrite /openwebrx_%d" % cfg.iq_server_port
 		rtl_thread=threading.Thread(target = lambda:subprocess.Popen(cfg.start_rtl_command, shell=True),  args=())
 		rtl_thread.start()
 		print "[openwebrx-main] Started rtl_thread: "+cfg.start_rtl_command
-	print "[openwebrx-main] Waiting for I/Q server to start..."
-	while True:
-		testsock=socket.socket()
-		try: testsock.connect(("127.0.0.1", cfg.iq_server_port))
-		except:
-			time.sleep(0.1)
-			continue
-		testsock.close()
-		break
-	print "[openwebrx-main] I/Q server started."
+	#print "[openwebrx-main] Waiting for I/Q server to start..."
+	#while True:
+	#	testsock=socket.socket()
+	#	try: testsock.connect(("127.0.0.1", cfg.iq_server_port))
+	#	except:
+	#		time.sleep(0.1)
+	#		continue
+	#	testsock.close()
+	#	break
+	#print "[openwebrx-main] I/Q server started."
+	# TODO: Maybe do something similar to check that shmwrite is ready?
+	# shmread fails if the shm resource isn't created yet when it starts.
+	# If it exists from older instance of shmwrite (not running anymore),
+	# it's possible that shmread starts reading from wrong point in the buffer.
 
 	#Initialize clients
 	clients=[]
