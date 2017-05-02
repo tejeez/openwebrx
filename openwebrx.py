@@ -542,6 +542,9 @@ class WebRXHandler(BaseHTTPRequestHandler):
 									elif param_name == "offset_freq" and -cfg.samp_rate/2 <= float(param_value) <= cfg.samp_rate/2:
 										myclient.loopstat=510
 										dsp.set_offset_freq(int(param_value))
+									elif param_name == "delay":
+										myclient.loopstat=510
+										dsp.set_delay(float(param_value))
 									elif param_name == "squelch_level" and float(param_value) >= 0:
 										myclient.loopstat=520
 										dsp.set_squelch_level(float(param_value))

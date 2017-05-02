@@ -375,6 +375,7 @@ demodulator=function(offset_frequency)
 {
 	//console.log("this too");
 	this.offset_frequency=offset_frequency;
+	this.delay=0;
 	this.has_audio_output=true;
 	this.has_text_output=false;
 	this.envelope={};
@@ -460,7 +461,8 @@ function demodulator_default_analog(offset_frequency,subtype)
 	{  //this function sends demodulator parameters to the server
 		ws.send("SET"+((first_time)?" mod="+this.server_mod:"")+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
-			" offset_freq="+this.offset_frequency.toString());
+			" offset_freq="+this.offset_frequency.toString()+
+			" delay="+this.delay.toString());
 	}
 	this.doset(true); //we set parameters on object creation
 
@@ -597,6 +599,16 @@ function demodulator_set_offset_frequency(which,to_what)
 	demodulators[0].set();
 	mkenvelopes(get_visible_freq_range());
 }
+
+function demodulator_set_offset_frequency_and_delay(which,to_what,to_what2)
+{
+	if(to_what>bandwidth/2||to_what<-bandwidth/2) return;
+	demodulators[0].offset_frequency=Math.round(to_what);
+	demodulators[0].delay=to_what2;
+	demodulators[0].set();
+	mkenvelopes(get_visible_freq_range());
+}
+
 
 
 // ========================================================
@@ -975,12 +987,13 @@ function canvas_mouseup(evt)
 {
 	if(!waterfall_setup_done) return;
 	relativeX=(evt.offsetX)?evt.offsetX:evt.layerX;
+	relativeY=(evt.offsetY)?evt.offsetY:evt.layerY;
 
 	if(!canvas_drag)
 	{
 		//ws.send("SET offset_freq="+canvas_get_freq_offset(relativeX).toString());
-		demodulator_set_offset_frequency(0, canvas_get_freq_offset(relativeX));
-		e("webrx-actual-freq").innerHTML=format_frequency("{x} MHz",canvas_get_frequency(relativeX),1e6,4);
+		demodulator_set_offset_frequency_and_delay(0, canvas_get_freq_offset(relativeX), relativeY);
+		e("webrx-actual-freq").innerHTML=format_frequency("{x} MHz",canvas_get_frequency(relativeX),1e6,4) + " / delay: " + relativeY.toString();
 	}
 	else
 	{

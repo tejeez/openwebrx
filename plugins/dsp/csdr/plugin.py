@@ -35,6 +35,7 @@ class dsp_plugin:
 		self.fft_size = 1024
 		self.fft_fps = 5
 		self.offset_freq = 0
+		self.delay = 0
 		self.low_cut = -4000
 		self.high_cut = 4000
 		self.bpf_transition_bw = 320 #Hz, and this is a constant
@@ -163,15 +164,24 @@ class dsp_plugin:
 	def set_real_input(self,real_input):
 		self.real_input=real_input
 
-	def set_offset_freq(self,offset_freq):
-		self.offset_freq=offset_freq
+	def set_offset_freq_and_delay(self):
 		if self.running:
+			# 4.0 for complex int16_t input - TODO: do it properly
+			delay_f = int(4.0*self.samp_rate * self.delay / self.fft_fps)
 			if self.real_input:
 				# for real signal, the "center frequency" is actually offset by samp_rate/4
-				self.shift_pipe_file.write("%g\n"%(-float(self.offset_freq)/self.samp_rate - 0.25))
+				self.shift_pipe_file.write("%g %d\n"%(-float(self.offset_freq)/self.samp_rate - 0.25, delay_f))
 			else:
-				self.shift_pipe_file.write("%g\n"%(-float(self.offset_freq)/self.samp_rate))
+				self.shift_pipe_file.write("%g %d\n"%(-float(self.offset_freq)/self.samp_rate, delay_f))
 			self.shift_pipe_file.flush()
+
+	def set_offset_freq(self,offset_freq):
+		self.offset_freq=offset_freq
+		self.set_offset_freq_and_delay()
+
+	def set_delay(self,delay):
+		self.delay=delay
+		self.set_offset_freq_and_delay()
 
 	def set_bpf(self,low_cut,high_cut):
 		self.low_cut=low_cut
