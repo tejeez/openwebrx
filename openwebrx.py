@@ -148,7 +148,8 @@ def main():
 		print "[openwebrx-main] Error: shmbuffer not detected. Get it from https://github.com/tejeez/shmbuffer , compile it and put it in PATH when starting OpenWebRX."
 		return
 	if cfg.start_rtl_thread:
-		cfg.start_rtl_command += "| shmwrite /openwebrx_%d" % cfg.iq_server_port
+		shm_size = 64 * 2**20  # example: 64 megabytes
+		cfg.start_rtl_command += "| shmwrite /openwebrx_%d %d" % (cfg.iq_server_port, shm_size)
 		rtl_thread=threading.Thread(target = lambda:subprocess.Popen(cfg.start_rtl_command, shell=True),  args=())
 		rtl_thread.start()
 		print "[openwebrx-main] Started rtl_thread: "+cfg.start_rtl_command

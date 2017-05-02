@@ -60,8 +60,11 @@ class dsp_plugin:
 		# TODO: Put it in configuration file.
 		# Now these fixed values break everything else.
 		# This is for initial test only!
-		self.pre_decimation = 10
-		self.specialddc = "cicddc_s16_c"
+		self.pre_decimation = 32
+		#self.specialddc = "cicddc_s16_c"  # real input
+		self.specialddc = "cicddc_cs16_c"  # complex input
+
+		self.ddc_reads_directly_from_shm = True
 
 	def chain(self,which):
 		any_chain_base="shmread /openwebrx_{nc_port} | "
@@ -83,7 +86,9 @@ class dsp_plugin:
 			else:
 				return fft_chain_base
 
-		if self.specialddc:
+		if self.specialddc and self.ddc_reads_directly_from_shm:
+			chain_begin="csdr shm_"+self.specialddc+ " /openwebrx_{nc_port} {pre_decimation} --fifo {shift_pipe} "
+		elif self.specialddc:
 			chain_begin=conversionless_chain_base+"csdr " +self.specialddc+ " {pre_decimation} --fifo {shift_pipe} "
 		elif self.real_input:
 			chain_begin=any_chain_base+"csdr shift_addition_fc --fifo {shift_pipe}"
@@ -231,7 +236,9 @@ class dsp_plugin:
 		my_env=os.environ.copy()
 		if self.csdr_dynamic_bufsize: my_env["CSDR_DYNAMIC_BUFSIZE_ON"]="1";
 		if self.csdr_print_bufsizes: my_env["CSDR_PRINT_BUFSIZES"]="1";
-		self.process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setpgrp, env=my_env)
+		#self.process = subprocess.Popen('('+command+') 2>stderrlog'+str(id(self)), stdout=subprocess.PIPE, shell=True, preexec_fn=os.setpgrp, env=my_env)
+		#self.process = subprocess.Popen('('+command+') 2>/dev/null', stdout=subprocess.PIPE, shell=True, preexec_fn=os.setpgrp, env=my_env)
+		self.process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid, env=my_env)
 		self.running = True
 
 		#open control pipes for csdr and send initialization data
