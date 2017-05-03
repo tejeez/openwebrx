@@ -987,7 +987,7 @@ function canvas_mouseup(evt)
 {
 	if(!waterfall_setup_done) return;
 	relativeX=(evt.offsetX)?evt.offsetX:evt.layerX;
-	relativeY=(evt.offsetY)?evt.offsetY:evt.layerY;
+	relativeY=evt.pageY - 114; //TODO
 
 	if(!canvas_drag)
 	{

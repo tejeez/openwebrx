@@ -74,18 +74,21 @@ class dsp_plugin:
 		conversionless_chain_base = any_chain_base
 		any_chain_base+=self.format_conversion+(" | " if  self.format_conversion!="" else "") ##"csdr flowcontrol {flowcontrol} auto 1.5 10 | "
 		if which == "fft":
-			fft_chain_base = any_chain_base + "csdr " + \
-			("fft_fc" if self.real_input else "fft_cc") + \
-			" {fft_size} {fft_block_size} | " + \
-			("csdr logpower_cf -70" if self.fft_averages == 0 else "csdr logaveragepower_cf -70 {fft_size} {fft_averages}")
+			if not self.real_input and self.fft_averages != 0:
+				fft_chain_base = any_chain_base + "csdr fft_cc_logavg {fft_size} {fft_block_size} -70 {fft_averages}"
+			else:
+				fft_chain_base = any_chain_base + "csdr " + \
+				("fft_fc" if self.real_input else "fft_cc") + \
+				" {fft_size} {fft_block_size} | " + \
+				("csdr logpower_cf -70" if self.fft_averages == 0 else "csdr logaveragepower_cf -70 {fft_size} {fft_averages}")
+
 
 			if not self.real_input:
 				fft_chain_base += " | csdr fft_exchange_sides_ff {fft_size}"
 
 			if self.fft_compression=="adpcm":
-				return fft_chain_base+" | csdr compress_fft_adpcm_f_u8 {fft_size}"
-			else:
-				return fft_chain_base
+				fft_chain_base+=" | csdr compress_fft_adpcm_f_u8 {fft_size}"
+			return "taskset -c 1 sh -c '" + fft_chain_base + "'"
 
 		if self.specialddc and self.ddc_reads_directly_from_shm:
 			chain_begin="csdr shm_"+self.specialddc+ " /openwebrx_{nc_port} {pre_decimation} --fifo {shift_pipe} "
