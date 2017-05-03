@@ -75,7 +75,11 @@ class dsp_plugin:
 		any_chain_base+=self.format_conversion+(" | " if  self.format_conversion!="" else "") ##"csdr flowcontrol {flowcontrol} auto 1.5 10 | "
 		if which == "fft":
 			if not self.real_input and self.fft_averages != 0:
-				fft_chain_base = any_chain_base + "csdr fft_cc_logavg {fft_size} {fft_block_size} -70 {fft_averages}"
+				if self.format_conversion == "csdr convert_s16_f":
+					# optimized special case
+					fft_chain_base = conversionless_chain_base + "csdr fft_cc_logavg {fft_size} {fft_block_size} -70 {fft_averages} --cs16_in"
+				else:
+					fft_chain_base = any_chain_base + "csdr fft_cc_logavg {fft_size} {fft_block_size} -70 {fft_averages}"
 			else:
 				fft_chain_base = any_chain_base + "csdr " + \
 				("fft_fc" if self.real_input else "fft_cc") + \
