@@ -148,9 +148,7 @@ def main():
 		print "[openwebrx-main] Error: shmbuffer not detected. Get it from https://github.com/tejeez/shmbuffer , compile it and put it in PATH when starting OpenWebRX."
 		return
 	if cfg.start_rtl_thread:
-		#shm_size = 64 * 2**20  # example: 64 megabytes
-		shm_size = 1 * 2**30  # example: 1 gigabyte
-		cfg.start_rtl_command += "| shmwrite /openwebrx_%d %d" % (cfg.iq_server_port, shm_size)
+		cfg.start_rtl_command += "| shmwrite /openwebrx_%d %d" % (cfg.iq_server_port, cfg.shm_size)
 		rtl_thread=threading.Thread(target = lambda:subprocess.Popen(cfg.start_rtl_command, shell=True),  args=())
 		rtl_thread.start()
 		print "[openwebrx-main] Started rtl_thread: "+cfg.start_rtl_command
@@ -288,8 +286,12 @@ def apply_csdr_cfg_to_dsp(dsp):
 def spectrum_thread_function():
 	global clients, spectrum_dsp, spectrum_thread_watchdog_last_tick
 	spectrum_dsp=dsp=getattr(plugins.dsp,cfg.dsp_plugin).plugin.dsp_plugin()
+
 	dsp.nc_port=cfg.iq_server_port
 	dsp.set_demodulator("fft")
+	dsp.set_pre_decimation(cfg.pre_decimation)
+	dsp.set_real_input(cfg.real_input)
+	dsp.set_shm_size(cfg.shm_size)
 	dsp.set_samp_rate(cfg.samp_rate)
 	dsp.set_fft_size(cfg.fft_size)
 	dsp.set_fft_fps(cfg.fft_fps)
@@ -305,7 +307,7 @@ def spectrum_thread_function():
 	dsp.set_fft_averages(fft_averages)
 	dsp.set_fft_compression(cfg.fft_compression)
 	dsp.set_format_conversion(cfg.format_conversion)
-	dsp.set_real_input(cfg.real_input)
+
 	apply_csdr_cfg_to_dsp(dsp)
 	sleep_sec=0.87/cfg.fft_fps
 	print "[openwebrx-spectrum] Spectrum thread initialized successfully."
@@ -315,6 +317,7 @@ def spectrum_thread_function():
 		print "[openwebrx-spectrum] Note: CSDR_DYNAMIC_BUFSIZE_ON = 1"
 	print "[openwebrx-spectrum] Spectrum thread started."
 	bytes_to_read=int(dsp.get_fft_bytes_to_read())
+	cfg.max_delay=dsp.get_max_delay()
 	spectrum_thread_counter=0
 	while True:
 		data=dsp.read(bytes_to_read)
@@ -461,14 +464,16 @@ class WebRXHandler(BaseHTTPRequestHandler):
 						return
 					myclient.ws_started=True
 					#send default parameters
-					rxws.send(self, "MSG center_freq={0} bandwidth={1} fft_size={2} fft_fps={3} audio_compression={4} fft_compression={5} max_clients={6} setup".format(str(cfg.shown_center_freq),str((cfg.samp_rate/2) if cfg.real_input else cfg.samp_rate),cfg.fft_size,cfg.fft_fps,cfg.audio_compression,cfg.fft_compression,cfg.max_clients))
+					rxws.send(self, "MSG center_freq={0} bandwidth={1} fft_size={2} fft_fps={3} audio_compression={4} fft_compression={5} max_clients={6} max_delay={7} setup".format(str(cfg.shown_center_freq),str((cfg.samp_rate/2) if cfg.real_input else cfg.samp_rate),cfg.fft_size,cfg.fft_fps,cfg.audio_compression,cfg.fft_compression,cfg.max_clients,cfg.max_delay))
 
 					# ========= Initialize DSP =========
 					dsp=getattr(plugins.dsp,cfg.dsp_plugin).plugin.dsp_plugin()
 					dsp_initialized=False
 					dsp.set_audio_compression(cfg.audio_compression)
-					dsp.set_format_conversion(cfg.format_conversion)
 					dsp.set_real_input(cfg.real_input)
+					dsp.set_pre_decimation(cfg.pre_decimation)
+					dsp.set_format_conversion(cfg.format_conversion)
+					dsp.set_shm_size(cfg.shm_size)
 					dsp.set_offset_freq(0)
 					dsp.set_bpf(-4000,4000)
 					dsp.nc_port=cfg.iq_server_port

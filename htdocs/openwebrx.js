@@ -51,6 +51,7 @@ var audio_compression="none";
 var waterfall_setup_done=0;
 var waterfall_queue = [];
 var waterfall_timer;
+var max_delay;
 
 /*function fade(something,from,to,time_ms,fps)
 {
@@ -987,13 +988,19 @@ function canvas_mouseup(evt)
 {
 	if(!waterfall_setup_done) return;
 	relativeX=(evt.offsetX)?evt.offsetX:evt.layerX;
-	relativeY=evt.pageY - 114; //TODO
+	delay_s = (evt.pageY - 114) / fft_fps; //TODO
+	if(delay_s > max_delay) {
+		delay_s = max_delay;
+		delay_text = " s (maximum!)";
+	} else {
+		delay_text = " s";
+	}
 
 	if(!canvas_drag)
 	{
 		//ws.send("SET offset_freq="+canvas_get_freq_offset(relativeX).toString());
-		demodulator_set_offset_frequency_and_delay(0, canvas_get_freq_offset(relativeX), relativeY);
-		e("webrx-actual-freq").innerHTML=format_frequency("{x} MHz",canvas_get_frequency(relativeX),1e6,4) + " / delay: " + relativeY.toString();
+		demodulator_set_offset_frequency_and_delay(0, canvas_get_freq_offset(relativeX), delay_s);
+		e("webrx-actual-freq").innerHTML=format_frequency("{x} MHz",canvas_get_frequency(relativeX),1e6,4) + " / delay: " + delay_s.toFixed(2) + delay_text;
 	}
 	else
 	{
@@ -1214,6 +1221,9 @@ function on_ws_recv(evt)
 						break;
 					case "max_clients":
 						max_clients_num=parseInt(param[1]);
+						break;
+					case "max_delay":
+						max_delay=parseInt(param[1]);
 						break;
 					case "s":
 						smeter_level=parseFloat(param[1]);

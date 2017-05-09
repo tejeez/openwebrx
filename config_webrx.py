@@ -31,6 +31,12 @@ config_webrx: configuration options for OpenWebRX
 	and use them for running your web service with OpenWebRX.)
 """
 
+# NOTE THAT THIS EXAMPLE CONFIG PROBABLY DOESN'T WORK IN THIS EXPERIMENTAL BRANCH!
+# (cicddc needs currently needs 16-bit input samples and this example is for rtl-sdr)
+# TODO: Fix this example config.
+
+
+
 # NOTE: you can find additional information about configuring OpenWebRX in the Wiki:
 #       https://github.com/simonyiszk/openwebrx/wiki
 
@@ -76,6 +82,8 @@ samp_rate = 250000
 center_freq = 145525000
 rf_gain = 5 #in dB. For an RTL-SDR, rf_gain=0 will set the tuner to auto gain mode, else it will be in manual gain mode.
 ppm = 0
+pre_decimation = 32
+shm_size = 2 * 2**30  # 2 gigabytes
 
 audio_compression="adpcm" #valid values: "adpcm", "none"
 fft_compression="adpcm" #valid values: "adpcm", "none"

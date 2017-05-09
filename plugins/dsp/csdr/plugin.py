@@ -57,13 +57,7 @@ class dsp_plugin:
 		self.pre_decimation = 1
 		self.specialddc = False
 
-		# Values to test CIC DDC on 16-bit real signal:
-		# TODO: Put it in configuration file.
-		# Now these fixed values break everything else.
-		# This is for initial test only!
-		self.pre_decimation = 32
-		#self.specialddc = "cicddc_s16_c"  # real input
-		self.specialddc = "cicddc_cs16_c"  # complex input
+		self.bytes_per_sample = 2
 
 		self.ddc_reads_directly_from_shm = True
 
@@ -167,6 +161,17 @@ class dsp_plugin:
 
 	def set_format_conversion(self,format_conversion):
 		self.format_conversion=format_conversion
+		if self.format_conversion == "csdr convert_s16_f":
+			if self.real_input:
+				self.specialddc = "cicddc_s16_c"  # real input
+				self.bytes_per_sample = 2
+			else:
+				self.specialddc = "cicddc_cs16_c"  # complex input
+				self.bytes_per_sample = 4
+		else:
+			print("Unsupported format for CIC DDC.")
+		print("specialddc:", self.specialddc)
+
 
 	def set_real_input(self,real_input):
 		self.real_input=real_input
@@ -174,7 +179,7 @@ class dsp_plugin:
 	def set_offset_freq_and_delay(self):
 		if self.running:
 			# 4.0 for complex int16_t input - TODO: do it properly
-			delay_f = int(4.0*self.samp_rate * self.delay / self.fft_fps)
+			delay_f = int(self.bytes_per_sample * self.samp_rate * self.delay)
 			if self.real_input:
 				# for real signal, the "center frequency" is actually offset by samp_rate/4
 				self.shift_pipe_file.write("%g %d\n"%(-float(self.offset_freq)/self.samp_rate - 0.25, delay_f))
@@ -197,6 +202,12 @@ class dsp_plugin:
 			self.bpf_pipe_file.write( "%g %g\n"%(float(self.low_cut)/self.if_samp_rate(), float(self.high_cut)/self.if_samp_rate()) )
 			self.bpf_pipe_file.flush()
 
+	def set_shm_size(self,shm_size):
+		self.shm_size = shm_size
+
+	def set_pre_decimation(self,pre_decimation):
+		self.pre_decimation = pre_decimation
+
 	def get_bpf(self):
 		return [self.low_cut, self.high_cut]
 
@@ -210,6 +221,9 @@ class dsp_plugin:
 		if self.running:
 			line=self.smeter_pipe_file.readline()
 			return float(line[:-1])
+
+	def get_max_delay(self):
+		return float(self.shm_size) / (float(self.samp_rate) * self.bytes_per_sample)
 
 	def mkfifo(self,path):
 		try:
