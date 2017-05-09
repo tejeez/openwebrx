@@ -78,12 +78,12 @@ fft_fps=9
 fft_size=4096
 fft_enable_average = True  # Set to False if you want to save CPU time
 fft_voverlap_factor=0.3 # How much successive averaged FFT windows overlap in time domain (zero for no overlap, negative to skip samples between FFTs)
-samp_rate = 250000
+samp_rate = 2400000
 center_freq = 145525000
 rf_gain = 5 #in dB. For an RTL-SDR, rf_gain=0 will set the tuner to auto gain mode, else it will be in manual gain mode.
 ppm = 0
-pre_decimation = 32
-shm_size = 2 * 2**30  # 2 gigabytes
+pre_decimation = 4
+shm_size = 1 * 2**30  # 1 gigabyte (make sure your /dev/shm is big enough)
 
 audio_compression="adpcm" #valid values: "adpcm", "none"
 fft_compression="adpcm" #valid values: "adpcm", "none"

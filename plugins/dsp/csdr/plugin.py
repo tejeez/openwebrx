@@ -168,6 +168,9 @@ class dsp_plugin:
 			else:
 				self.specialddc = "cicddc_cs16_c"  # complex input
 				self.bytes_per_sample = 4
+		elif self.format_conversion == "csdr convert_u8_f" and not self.real_input:
+			self.specialddc="cicddc_cu8_c"
+			self.bytes_per_sample = 2
 		else:
 			print("Unsupported format for CIC DDC.")
 		print("specialddc:", self.specialddc)
