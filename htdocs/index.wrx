@@ -39,6 +39,7 @@
 		<script src="openwebrx.js"></script>
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 		<meta charset="utf-8">
+		<link rel="manifest" href="/manifest.json">
 	</head>
 	<body onload="openwebrx_init();">
 <div id="webrx-page-container">

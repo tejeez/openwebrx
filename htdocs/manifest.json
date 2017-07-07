@@ -1,0 +1,8 @@
+{
+	"name": "OpenWebRX",
+	"short_name": "OpenWebRX",
+	"start_url": ".",
+	"display": "standalone",
+	"orientation": "landscape",
+	"theme_color": "#FF0000"
+}
